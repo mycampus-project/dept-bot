@@ -1,0 +1,20 @@
+name: depts
+
+on:
+  schedule:
+    # * is a special character in YAML so have to quote this string
+    # Runs workflow at 07.00 UTC every 3 days
+    - cron:  '0 7 3 * *'
+  # Enables running the workflow manually / through API
+  # Must be on default branch to work
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: install dependencies
+        run: npm ci
+      - uses: tuoku/dept-bot@v1
+
