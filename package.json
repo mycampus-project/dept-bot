@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "tsc",
+    "build": "ncc build src/index.ts",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
@@ -9,6 +9,7 @@
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "devDependencies": {
+    "@vercel/ncc": "^0.36.0",
     "typescript": "^4.9.4"
   },
   "dependencies": {
