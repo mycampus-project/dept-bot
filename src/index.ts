@@ -12,6 +12,8 @@ async function run(): Promise<void> {
         title: "Hello World",
       });
       console.log("Issue created: %s", data.html_url);
+      core.debug(owner + "/" + repo)
+      core.debug(data.html_url);
       core.setOutput('message', 'Hello World!')
     } catch (error) {
       if (error instanceof Error) core.setFailed(error.message)
