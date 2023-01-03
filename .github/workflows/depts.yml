@@ -17,4 +17,5 @@ jobs:
       - name: install dependencies
         run: npm ci
       - uses: tuoku/dept-bot@v1.0.1
-
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
