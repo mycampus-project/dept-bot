@@ -10835,6 +10835,68 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 4314:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Audit = void 0;
+const child_process_1 = __nccwpck_require__(2081);
+const strip_ansi_1 = __importDefault(__nccwpck_require__(8770));
+const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
+class Audit {
+    constructor() {
+        this.stdout = '';
+        this.status = null;
+    }
+    run(auditLevel, productionFlag, jsonFlag) {
+        try {
+            const auditOptions = ['audit', '--audit-level', auditLevel];
+            const isWindowsEnvironment = process.platform == 'win32';
+            const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
+            if (productionFlag === 'true') {
+                auditOptions.push('--omit=dev');
+            }
+            if (jsonFlag === 'true') {
+                auditOptions.push('--json');
+            }
+            const result = (0, child_process_1.spawnSync)(cmd, auditOptions, {
+                encoding: 'utf-8',
+                maxBuffer: SPAWN_PROCESS_BUFFER_SIZE
+            });
+            if (result.error) {
+                throw result.error;
+            }
+            if (result.status === null) {
+                throw new Error('the subprocess terminated due to a signal.');
+            }
+            if (result.stderr && result.stderr.length > 0) {
+                throw new Error(result.stderr);
+            }
+            this.status = result.status;
+            this.stdout = result.stdout;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    foundVulnerability() {
+        // `npm audit` return 1 when it found vulnerabilities
+        return this.status === 1;
+    }
+    strippedStdout() {
+        return `\`\`\`\n${(0, strip_ansi_1.default)(this.stdout)}\n\`\`\``;
+    }
+}
+exports.Audit = Audit;
+
+
+/***/ }),
+
 /***/ 6144:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -10875,25 +10937,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
+const audit_1 = __nccwpck_require__(4314);
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const octokit = new action_1.Octokit();
-            const [owner, repo] = ((_a = process.env.GITHUB_REPOSITORY) !== null && _a !== void 0 ? _a : "a/b").split("/");
-            const { data } = yield octokit.request("POST /repos/{owner}/{repo}/issues", {
-                owner,
-                repo,
-                title: "Hello World",
-            });
-            console.log("Issue created: %s", data.html_url);
-            core.debug(owner + "/" + repo);
-            core.debug(data.html_url);
-            core.setOutput('message', 'Hello World!');
+            // run `npm audit`
+            const audit = new audit_1.Audit();
+            audit.run('info', 'true', 'true');
+            core.info(audit.stdout);
+            core.setOutput('npm_audit', audit.stdout);
+            if (audit.foundVulnerability()) {
+                // vulnerabilities are found
+                core.debug('open an issue');
+                // remove control characters and create a code block
+                const issueBody = audit.strippedStdout();
+                const octokit = new action_1.Octokit();
+                const [owner, repo] = ((_a = process.env.GITHUB_REPOSITORY) !== null && _a !== void 0 ? _a : "a/b").split("/");
+                const { data } = yield octokit.request("POST /repos/{owner}/{repo}/issues", {
+                    owner,
+                    repo,
+                    title: issueBody,
+                });
+                console.log("Issue created: %s", data.html_url);
+                core.debug(owner + "/" + repo);
+                core.debug(data.html_url);
+                core.setFailed('This repo has some vulnerabilities');
+            }
         }
-        catch (error) {
-            if (error instanceof Error)
-                core.setFailed(error.message);
+        catch (e) {
+            if (e instanceof Error) {
+                core.setFailed(e.message);
+            }
         }
     });
 }
@@ -10923,6 +10998,14 @@ module.exports = eval("require")("supports-color");
 
 "use strict";
 module.exports = require("assert");
+
+/***/ }),
+
+/***/ 2081:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
 
 /***/ }),
 
@@ -11046,6 +11129,42 @@ module.exports = require("zlib");
 
 /***/ }),
 
+/***/ 8770:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "default": () => (/* binding */ stripAnsi)
+});
+
+;// CONCATENATED MODULE: ./node_modules/ansi-regex/index.js
+function ansiRegex({onlyFirst = false} = {}) {
+	const pattern = [
+	    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+		'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
+	].join('|');
+
+	return new RegExp(pattern, onlyFirst ? undefined : 'g');
+}
+
+;// CONCATENATED MODULE: ./node_modules/strip-ansi/index.js
+
+
+function stripAnsi(string) {
+	if (typeof string !== 'string') {
+		throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
+	}
+
+	return string.replace(ansiRegex(), '');
+}
+
+
+/***/ }),
+
 /***/ 2020:
 /***/ ((module) => {
 
@@ -11087,6 +11206,34 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
