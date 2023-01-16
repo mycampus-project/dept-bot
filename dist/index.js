@@ -10957,7 +10957,8 @@ function run() {
                 const { data } = yield octokit.request("POST /repos/{owner}/{repo}/issues", {
                     owner,
                     repo,
-                    title: issueBody,
+                    title: "Vulnerabilities found",
+                    body: issueBody
                 });
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
