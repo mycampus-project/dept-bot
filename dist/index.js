@@ -10967,7 +10967,17 @@ class Outdated {
         return this.status === 1;
     }
     strippedStdout() {
-        return `\`\`\`\n${(0, strip_ansi_1.default)(this.stdout)}\n\`\`\``;
+        const json = JSON.parse(this.stdout);
+        let majors = [];
+        for (var dept in json) {
+            let current = json[dept]["current"].split(".")[0];
+            let latest = json[dept]["latest"].split(".")[0];
+            if (latest > current) {
+                majors.push(json[dept]);
+            }
+        }
+        const body = JSON.stringify(majors);
+        return `\`\`\`\n${(0, strip_ansi_1.default)(body)}\n\`\`\``;
     }
 }
 exports.Outdated = Outdated;

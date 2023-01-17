@@ -48,6 +48,16 @@ export class Outdated {
   }
 
   public strippedStdout(): string {
-    return `\`\`\`\n${stripAnsi(this.stdout)}\n\`\`\``
+    const json = JSON.parse(this.stdout)
+          let majors = []
+          for (var dept in json) {
+            let current: Number = json[dept]["current"].split(".")[0];
+            let latest: Number = json[dept]["latest"].split(".")[0];
+            if(latest > current) {
+              majors.push(json[dept]);
+            }
+          }
+          const body = JSON.stringify(majors);
+    return `\`\`\`\n${stripAnsi(body)}\n\`\`\``
   }
 }

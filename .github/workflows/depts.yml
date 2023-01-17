@@ -16,6 +16,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: install dependencies
         run: npm ci
-      - uses: tuoku/dept-bot@v1.0.8
+      - uses: tuoku/dept-bot@v1.0.9
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

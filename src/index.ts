@@ -19,7 +19,7 @@ async function run(): Promise<void> {
     
           // remove control characters and create a code block
           const issueBody = outdated.strippedStdout()
-    
+          
           const octokit = new Octokit();
           const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
           const { data } = await octokit.request("POST /repos/{owner}/{repo}/issues", {
