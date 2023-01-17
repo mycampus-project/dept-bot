@@ -1,5 +1,6 @@
 import {spawnSync, SpawnSyncReturns} from 'child_process'
 import stripAnsi from 'strip-ansi'
+import logger from 'not-a-log'
 
 const SPAWN_PROCESS_BUFFER_SIZE = 10485760 // 10MiB
 
@@ -57,7 +58,7 @@ export class Outdated {
               majors.push(json[dept]);
             }
           }
-          const body = JSON.stringify(majors);
+          const body = logger.table(majors) ;
     return `\`\`\`\n${stripAnsi(body)}\n\`\`\``
   }
 }
