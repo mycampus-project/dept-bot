@@ -1,6 +1,7 @@
 import {spawnSync, SpawnSyncReturns} from 'child_process'
 import stripAnsi from 'strip-ansi'
 import logger from 'not-a-log'
+let columnify = require('columnify')
 
 const SPAWN_PROCESS_BUFFER_SIZE = 10485760 // 10MiB
 
@@ -68,7 +69,7 @@ export class Outdated {
             }
             formatted.push(entry)
           }
-          const body = logger.table(formatted) ;
+          const body = columnify(formatted) ;
     return `\`\`\`\n${stripAnsi(body)}\n\`\`\``
   }
 }

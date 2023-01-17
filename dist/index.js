@@ -4562,6 +4562,737 @@ function removeHook(state, name, method) {
 
 /***/ }),
 
+/***/ 8606:
+/***/ ((module) => {
+
+var clone = (function() {
+'use strict';
+
+/**
+ * Clones (copies) an Object using deep copying.
+ *
+ * This function supports circular references by default, but if you are certain
+ * there are no circular references in your object, you can save some CPU time
+ * by calling clone(obj, false).
+ *
+ * Caution: if `circular` is false and `parent` contains circular references,
+ * your program may enter an infinite loop and crash.
+ *
+ * @param `parent` - the object to be cloned
+ * @param `circular` - set to true if the object to be cloned may contain
+ *    circular references. (optional - true by default)
+ * @param `depth` - set to a number if the object is only to be cloned to
+ *    a particular depth. (optional - defaults to Infinity)
+ * @param `prototype` - sets the prototype to be used when cloning an object.
+ *    (optional - defaults to parent prototype).
+*/
+function clone(parent, circular, depth, prototype) {
+  var filter;
+  if (typeof circular === 'object') {
+    depth = circular.depth;
+    prototype = circular.prototype;
+    filter = circular.filter;
+    circular = circular.circular
+  }
+  // maintain two arrays for circular references, where corresponding parents
+  // and children have the same index
+  var allParents = [];
+  var allChildren = [];
+
+  var useBuffer = typeof Buffer != 'undefined';
+
+  if (typeof circular == 'undefined')
+    circular = true;
+
+  if (typeof depth == 'undefined')
+    depth = Infinity;
+
+  // recurse this function so we don't reset allParents and allChildren
+  function _clone(parent, depth) {
+    // cloning null always returns null
+    if (parent === null)
+      return null;
+
+    if (depth == 0)
+      return parent;
+
+    var child;
+    var proto;
+    if (typeof parent != 'object') {
+      return parent;
+    }
+
+    if (clone.__isArray(parent)) {
+      child = [];
+    } else if (clone.__isRegExp(parent)) {
+      child = new RegExp(parent.source, __getRegExpFlags(parent));
+      if (parent.lastIndex) child.lastIndex = parent.lastIndex;
+    } else if (clone.__isDate(parent)) {
+      child = new Date(parent.getTime());
+    } else if (useBuffer && Buffer.isBuffer(parent)) {
+      if (Buffer.allocUnsafe) {
+        // Node.js >= 4.5.0
+        child = Buffer.allocUnsafe(parent.length);
+      } else {
+        // Older Node.js versions
+        child = new Buffer(parent.length);
+      }
+      parent.copy(child);
+      return child;
+    } else {
+      if (typeof prototype == 'undefined') {
+        proto = Object.getPrototypeOf(parent);
+        child = Object.create(proto);
+      }
+      else {
+        child = Object.create(prototype);
+        proto = prototype;
+      }
+    }
+
+    if (circular) {
+      var index = allParents.indexOf(parent);
+
+      if (index != -1) {
+        return allChildren[index];
+      }
+      allParents.push(parent);
+      allChildren.push(child);
+    }
+
+    for (var i in parent) {
+      var attrs;
+      if (proto) {
+        attrs = Object.getOwnPropertyDescriptor(proto, i);
+      }
+
+      if (attrs && attrs.set == null) {
+        continue;
+      }
+      child[i] = _clone(parent[i], depth - 1);
+    }
+
+    return child;
+  }
+
+  return _clone(parent, depth);
+}
+
+/**
+ * Simple flat clone using prototype, accepts only objects, usefull for property
+ * override on FLAT configuration object (no nested props).
+ *
+ * USE WITH CAUTION! This may not behave as you wish if you do not know how this
+ * works.
+ */
+clone.clonePrototype = function clonePrototype(parent) {
+  if (parent === null)
+    return null;
+
+  var c = function () {};
+  c.prototype = parent;
+  return new c();
+};
+
+// private utility functions
+
+function __objToStr(o) {
+  return Object.prototype.toString.call(o);
+};
+clone.__objToStr = __objToStr;
+
+function __isDate(o) {
+  return typeof o === 'object' && __objToStr(o) === '[object Date]';
+};
+clone.__isDate = __isDate;
+
+function __isArray(o) {
+  return typeof o === 'object' && __objToStr(o) === '[object Array]';
+};
+clone.__isArray = __isArray;
+
+function __isRegExp(o) {
+  return typeof o === 'object' && __objToStr(o) === '[object RegExp]';
+};
+clone.__isRegExp = __isRegExp;
+
+function __getRegExpFlags(re) {
+  var flags = '';
+  if (re.global) flags += 'g';
+  if (re.ignoreCase) flags += 'i';
+  if (re.multiline) flags += 'm';
+  return flags;
+};
+clone.__getRegExpFlags = __getRegExpFlags;
+
+return clone;
+})();
+
+if ( true && module.exports) {
+  module.exports = clone;
+}
+
+
+/***/ }),
+
+/***/ 1994:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var wcwidth = __nccwpck_require__(1177);
+
+var _require = __nccwpck_require__(8580),
+    padRight = _require.padRight,
+    padCenter = _require.padCenter,
+    padLeft = _require.padLeft,
+    splitIntoLines = _require.splitIntoLines,
+    splitLongWords = _require.splitLongWords,
+    truncateString = _require.truncateString;
+
+var DEFAULT_HEADING_TRANSFORM = function DEFAULT_HEADING_TRANSFORM(key) {
+  return key.toUpperCase();
+};
+
+var DEFAULT_DATA_TRANSFORM = function DEFAULT_DATA_TRANSFORM(cell, column, index) {
+  return cell;
+};
+
+var DEFAULTS = Object.freeze({
+  maxWidth: Infinity,
+  minWidth: 0,
+  columnSplitter: ' ',
+  truncate: false,
+  truncateMarker: '…',
+  preserveNewLines: false,
+  paddingChr: ' ',
+  showHeaders: true,
+  headingTransform: DEFAULT_HEADING_TRANSFORM,
+  dataTransform: DEFAULT_DATA_TRANSFORM
+});
+
+module.exports = function (items) {
+  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+
+  var columnConfigs = options.config || {};
+  delete options.config; // remove config so doesn't appear on every column.
+
+  var maxLineWidth = options.maxLineWidth || Infinity;
+  if (maxLineWidth === 'auto') maxLineWidth = process.stdout.columns || Infinity;
+  delete options.maxLineWidth; // this is a line control option, don't pass it to column
+
+  // Option defaults inheritance:
+  // options.config[columnName] => options => DEFAULTS
+  options = mixin({}, DEFAULTS, options);
+
+  options.config = options.config || Object.create(null);
+
+  options.spacing = options.spacing || '\n'; // probably useless
+  options.preserveNewLines = !!options.preserveNewLines;
+  options.showHeaders = !!options.showHeaders;
+  options.columns = options.columns || options.include; // alias include/columns, prefer columns if supplied
+  var columnNames = options.columns || []; // optional user-supplied columns to include
+
+  items = toArray(items, columnNames);
+
+  // if not suppled column names, automatically determine columns from data keys
+  if (!columnNames.length) {
+    items.forEach(function (item) {
+      for (var columnName in item) {
+        if (columnNames.indexOf(columnName) === -1) columnNames.push(columnName);
+      }
+    });
+  }
+
+  // initialize column defaults (each column inherits from options.config)
+  var columns = columnNames.reduce(function (columns, columnName) {
+    var column = Object.create(options);
+    columns[columnName] = mixin(column, columnConfigs[columnName]);
+    return columns;
+  }, Object.create(null));
+
+  // sanitize column settings
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    column.name = columnName;
+    column.maxWidth = Math.ceil(column.maxWidth);
+    column.minWidth = Math.ceil(column.minWidth);
+    column.truncate = !!column.truncate;
+    column.align = column.align || 'left';
+  });
+
+  // sanitize data
+  items = items.map(function (item) {
+    var result = Object.create(null);
+    columnNames.forEach(function (columnName) {
+      // null/undefined -> ''
+      result[columnName] = item[columnName] != null ? item[columnName] : '';
+      // toString everything
+      result[columnName] = '' + result[columnName];
+      if (columns[columnName].preserveNewLines) {
+        // merge non-newline whitespace chars
+        result[columnName] = result[columnName].replace(/[^\S\n]/gmi, ' ');
+      } else {
+        // merge all whitespace chars
+        result[columnName] = result[columnName].replace(/\s/gmi, ' ');
+      }
+    });
+    return result;
+  });
+
+  // transform data cells
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    items = items.map(function (item, index) {
+      var col = Object.create(column);
+      item[columnName] = column.dataTransform(item[columnName], col, index);
+
+      var changedKeys = Object.keys(col);
+      // disable default heading transform if we wrote to column.name
+      if (changedKeys.indexOf('name') !== -1) {
+        if (column.headingTransform !== DEFAULT_HEADING_TRANSFORM) return;
+        column.headingTransform = function (heading) {
+          return heading;
+        };
+      }
+      changedKeys.forEach(function (key) {
+        return column[key] = col[key];
+      });
+      return item;
+    });
+  });
+
+  // add headers
+  var headers = {};
+  if (options.showHeaders) {
+    columnNames.forEach(function (columnName) {
+      var column = columns[columnName];
+
+      if (!column.showHeaders) {
+        headers[columnName] = '';
+        return;
+      }
+
+      headers[columnName] = column.headingTransform(column.name);
+    });
+    items.unshift(headers);
+  }
+  // get actual max-width between min & max
+  // based on length of data in columns
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    column.width = items.map(function (item) {
+      return item[columnName];
+    }).reduce(function (min, cur) {
+      // if already at maxWidth don't bother testing
+      if (min >= column.maxWidth) return min;
+      return Math.max(min, Math.min(column.maxWidth, Math.max(column.minWidth, wcwidth(cur))));
+    }, 0);
+  });
+
+  // split long words so they can break onto multiple lines
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    items = items.map(function (item) {
+      item[columnName] = splitLongWords(item[columnName], column.width, column.truncateMarker);
+      return item;
+    });
+  });
+
+  // wrap long lines. each item is now an array of lines.
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    items = items.map(function (item, index) {
+      var cell = item[columnName];
+      item[columnName] = splitIntoLines(cell, column.width);
+
+      // if truncating required, only include first line + add truncation char
+      if (column.truncate && item[columnName].length > 1) {
+        item[columnName] = splitIntoLines(cell, column.width - wcwidth(column.truncateMarker));
+        var firstLine = item[columnName][0];
+        if (!endsWith(firstLine, column.truncateMarker)) item[columnName][0] += column.truncateMarker;
+        item[columnName] = item[columnName].slice(0, 1);
+      }
+      return item;
+    });
+  });
+
+  // recalculate column widths from truncated output/lines
+  columnNames.forEach(function (columnName) {
+    var column = columns[columnName];
+    column.width = items.map(function (item) {
+      return item[columnName].reduce(function (min, cur) {
+        if (min >= column.maxWidth) return min;
+        return Math.max(min, Math.min(column.maxWidth, Math.max(column.minWidth, wcwidth(cur))));
+      }, 0);
+    }).reduce(function (min, cur) {
+      if (min >= column.maxWidth) return min;
+      return Math.max(min, Math.min(column.maxWidth, Math.max(column.minWidth, cur)));
+    }, 0);
+  });
+
+  var rows = createRows(items, columns, columnNames, options.paddingChr); // merge lines into rows
+  // conceive output
+  return rows.reduce(function (output, row) {
+    return output.concat(row.reduce(function (rowOut, line) {
+      return rowOut.concat(line.join(options.columnSplitter));
+    }, []));
+  }, []).map(function (line) {
+    return truncateString(line, maxLineWidth);
+  }).join(options.spacing);
+};
+
+/**
+ * Convert wrapped lines into rows with padded values.
+ *
+ * @param Array items data to process
+ * @param Array columns column width settings for wrapping
+ * @param Array columnNames column ordering
+ * @return Array items wrapped in arrays, corresponding to lines
+ */
+
+function createRows(items, columns, columnNames, paddingChr) {
+  return items.map(function (item) {
+    var row = [];
+    var numLines = 0;
+    columnNames.forEach(function (columnName) {
+      numLines = Math.max(numLines, item[columnName].length);
+    });
+    // combine matching lines of each rows
+
+    var _loop = function _loop(i) {
+      row[i] = row[i] || [];
+      columnNames.forEach(function (columnName) {
+        var column = columns[columnName];
+        var val = item[columnName][i] || ''; // || '' ensures empty columns get padded
+        if (column.align === 'right') row[i].push(padLeft(val, column.width, paddingChr));else if (column.align === 'center' || column.align === 'centre') row[i].push(padCenter(val, column.width, paddingChr));else row[i].push(padRight(val, column.width, paddingChr));
+      });
+    };
+
+    for (var i = 0; i < numLines; i++) {
+      _loop(i);
+    }
+    return row;
+  });
+}
+
+/**
+ * Object.assign
+ *
+ * @return Object Object with properties mixed in.
+ */
+
+function mixin() {
+  if (Object.assign) return Object.assign.apply(Object, arguments);
+  return ObjectAssign.apply(undefined, arguments);
+}
+
+function ObjectAssign(target, firstSource) {
+  "use strict";
+
+  if (target === undefined || target === null) throw new TypeError("Cannot convert first argument to object");
+
+  var to = Object(target);
+
+  var hasPendingException = false;
+  var pendingException;
+
+  for (var i = 1; i < arguments.length; i++) {
+    var nextSource = arguments[i];
+    if (nextSource === undefined || nextSource === null) continue;
+
+    var keysArray = Object.keys(Object(nextSource));
+    for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+      var nextKey = keysArray[nextIndex];
+      try {
+        var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+        if (desc !== undefined && desc.enumerable) to[nextKey] = nextSource[nextKey];
+      } catch (e) {
+        if (!hasPendingException) {
+          hasPendingException = true;
+          pendingException = e;
+        }
+      }
+    }
+
+    if (hasPendingException) throw pendingException;
+  }
+  return to;
+}
+
+/**
+ * Adapted from String.prototype.endsWith polyfill.
+ */
+
+function endsWith(target, searchString, position) {
+  position = position || target.length;
+  position = position - searchString.length;
+  var lastIndex = target.lastIndexOf(searchString);
+  return lastIndex !== -1 && lastIndex === position;
+}
+
+function toArray(items, columnNames) {
+  if (Array.isArray(items)) return items;
+  var rows = [];
+  for (var key in items) {
+    var item = {};
+    item[columnNames[0] || 'key'] = key;
+    item[columnNames[1] || 'value'] = items[key];
+    rows.push(item);
+  }
+  return rows;
+}
+
+
+
+/***/ }),
+
+/***/ 4972:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = ({onlyFirst = false} = {}) => {
+	const pattern = [
+		'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+		'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
+	].join('|');
+
+	return new RegExp(pattern, onlyFirst ? undefined : 'g');
+};
+
+
+/***/ }),
+
+/***/ 9169:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const ansiRegex = __nccwpck_require__(4972);
+
+module.exports = string => typeof string === 'string' ? string.replace(ansiRegex(), '') : string;
+
+
+/***/ }),
+
+/***/ 8580:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var wcwidth = __nccwpck_require__(1177)
+
+/**
+ * repeat string `str` up to total length of `len`
+ *
+ * @param String str string to repeat
+ * @param Number len total length of output string
+ */
+
+function repeatString(str, len) {
+  return Array.apply(null, {length: len + 1}).join(str).slice(0, len)
+}
+
+/**
+ * Pad `str` up to total length `max` with `chr`.
+ * If `str` is longer than `max`, padRight will return `str` unaltered.
+ *
+ * @param String str string to pad
+ * @param Number max total length of output string
+ * @param String chr optional. Character to pad with. default: ' '
+ * @return String padded str
+ */
+
+function padRight(str, max, chr) {
+  str = str != null ? str : ''
+  str = String(str)
+  var length = max - wcwidth(str)
+  if (length <= 0) return str
+  return str + repeatString(chr || ' ', length)
+}
+
+/**
+ * Pad `str` up to total length `max` with `chr`.
+ * If `str` is longer than `max`, padCenter will return `str` unaltered.
+ *
+ * @param String str string to pad
+ * @param Number max total length of output string
+ * @param String chr optional. Character to pad with. default: ' '
+ * @return String padded str
+ */
+
+function padCenter(str, max, chr) {
+  str = str != null ? str : ''
+  str = String(str)
+  var length = max - wcwidth(str)
+  if (length <= 0) return str
+  var lengthLeft = Math.floor(length/2)
+  var lengthRight = length - lengthLeft
+  return repeatString(chr || ' ', lengthLeft) + str + repeatString(chr || ' ', lengthRight)
+}
+
+/**
+ * Pad `str` up to total length `max` with `chr`, on the left.
+ * If `str` is longer than `max`, padRight will return `str` unaltered.
+ *
+ * @param String str string to pad
+ * @param Number max total length of output string
+ * @param String chr optional. Character to pad with. default: ' '
+ * @return String padded str
+ */
+
+function padLeft(str, max, chr) {
+  str = str != null ? str : ''
+  str = String(str)
+  var length = max - wcwidth(str)
+  if (length <= 0) return str
+  return repeatString(chr || ' ', length) + str
+}
+
+/**
+ * Split a String `str` into lines of maxiumum length `max`.
+ * Splits on word boundaries. Preserves existing new lines.
+ *
+ * @param String str string to split
+ * @param Number max length of each line
+ * @return Array Array containing lines.
+ */
+
+function splitIntoLines(str, max) {
+  function _splitIntoLines(str, max) {
+    return str.trim().split(' ').reduce(function(lines, word) {
+      var line = lines[lines.length - 1]
+      if (line && wcwidth(line.join(' ')) + wcwidth(word) < max) {
+        lines[lines.length - 1].push(word) // add to line
+      }
+      else lines.push([word]) // new line
+      return lines
+    }, []).map(function(l) {
+      return l.join(' ')
+    })
+  }
+  return str.split('\n').map(function(str) {
+    return _splitIntoLines(str, max)
+  }).reduce(function(lines, line) {
+    return lines.concat(line)
+  }, [])
+}
+
+/**
+ * Add spaces and `truncationChar` between words of
+ * `str` which are longer than `max`.
+ *
+ * @param String str string to split
+ * @param Number max length of each line
+ * @param Number truncationChar character to append to split words
+ * @return String
+ */
+
+function splitLongWords(str, max, truncationChar) {
+  str = str.trim()
+  var result = []
+  var words = str.split(' ')
+  var remainder = ''
+
+  var truncationWidth = wcwidth(truncationChar)
+
+  while (remainder || words.length) {
+    if (remainder) {
+      var word = remainder
+      remainder = ''
+    } else {
+      var word = words.shift()
+    }
+
+    if (wcwidth(word) > max) {
+      // slice is based on length no wcwidth
+      var i = 0
+      var wwidth = 0
+      var limit = max - truncationWidth
+      while (i < word.length) {
+        var w = wcwidth(word.charAt(i))
+        if (w + wwidth > limit) {
+          break
+        }
+        wwidth += w
+        ++i
+      }
+
+      remainder = word.slice(i) // get remainder
+      // save remainder for next loop
+
+      word = word.slice(0, i) // grab truncated word
+      word += truncationChar // add trailing … or whatever
+    }
+    result.push(word)
+  }
+
+  return result.join(' ')
+}
+
+
+/**
+ * Truncate `str` into total width `max`
+ * If `str` is shorter than `max`,  will return `str` unaltered.
+ *
+ * @param String str string to truncated
+ * @param Number max total wcwidth of output string
+ * @return String truncated str
+ */
+
+function truncateString(str, max) {
+
+  str = str != null ? str : ''
+  str = String(str)
+
+  if(max == Infinity) return str
+
+  var i = 0
+  var wwidth = 0
+  while (i < str.length) {
+    var w = wcwidth(str.charAt(i))
+    if(w + wwidth > max)
+      break
+    wwidth += w
+    ++i
+  }
+  return str.slice(0, i)
+}
+
+
+
+/**
+ * Exports
+ */
+
+module.exports.padRight = padRight
+module.exports.padCenter = padCenter
+module.exports.padLeft = padLeft
+module.exports.splitIntoLines = splitIntoLines
+module.exports.splitLongWords = splitLongWords
+module.exports.truncateString = truncateString
+
+
+/***/ }),
+
+/***/ 1177:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var stripAnsi = __nccwpck_require__(9169)
+var wcwidth = __nccwpck_require__(5917)
+
+module.exports = function(str) {
+  return wcwidth(stripAnsi(str))
+}
+
+
+/***/ }),
+
 /***/ 8222:
 /***/ ((module, exports, __nccwpck_require__) => {
 
@@ -5403,6 +6134,25 @@ formatters.O = function (v) {
 	return util.inspect(v, this.inspectOpts);
 };
 
+
+/***/ }),
+
+/***/ 732:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var clone = __nccwpck_require__(8606);
+
+module.exports = function(options, defaults) {
+  options = options || {};
+
+  Object.keys(defaults).forEach(function(key) {
+    if (typeof options[key] === 'undefined') {
+      options[key] = clone(defaults[key]);
+    }
+  });
+
+  return options;
+};
 
 /***/ }),
 
@@ -8834,6 +9584,170 @@ exports["default"] = _default;
 
 /***/ }),
 
+/***/ 4383:
+/***/ ((module) => {
+
+module.exports = [
+    [ 0x0300, 0x036F ], [ 0x0483, 0x0486 ], [ 0x0488, 0x0489 ],
+    [ 0x0591, 0x05BD ], [ 0x05BF, 0x05BF ], [ 0x05C1, 0x05C2 ],
+    [ 0x05C4, 0x05C5 ], [ 0x05C7, 0x05C7 ], [ 0x0600, 0x0603 ],
+    [ 0x0610, 0x0615 ], [ 0x064B, 0x065E ], [ 0x0670, 0x0670 ],
+    [ 0x06D6, 0x06E4 ], [ 0x06E7, 0x06E8 ], [ 0x06EA, 0x06ED ],
+    [ 0x070F, 0x070F ], [ 0x0711, 0x0711 ], [ 0x0730, 0x074A ],
+    [ 0x07A6, 0x07B0 ], [ 0x07EB, 0x07F3 ], [ 0x0901, 0x0902 ],
+    [ 0x093C, 0x093C ], [ 0x0941, 0x0948 ], [ 0x094D, 0x094D ],
+    [ 0x0951, 0x0954 ], [ 0x0962, 0x0963 ], [ 0x0981, 0x0981 ],
+    [ 0x09BC, 0x09BC ], [ 0x09C1, 0x09C4 ], [ 0x09CD, 0x09CD ],
+    [ 0x09E2, 0x09E3 ], [ 0x0A01, 0x0A02 ], [ 0x0A3C, 0x0A3C ],
+    [ 0x0A41, 0x0A42 ], [ 0x0A47, 0x0A48 ], [ 0x0A4B, 0x0A4D ],
+    [ 0x0A70, 0x0A71 ], [ 0x0A81, 0x0A82 ], [ 0x0ABC, 0x0ABC ],
+    [ 0x0AC1, 0x0AC5 ], [ 0x0AC7, 0x0AC8 ], [ 0x0ACD, 0x0ACD ],
+    [ 0x0AE2, 0x0AE3 ], [ 0x0B01, 0x0B01 ], [ 0x0B3C, 0x0B3C ],
+    [ 0x0B3F, 0x0B3F ], [ 0x0B41, 0x0B43 ], [ 0x0B4D, 0x0B4D ],
+    [ 0x0B56, 0x0B56 ], [ 0x0B82, 0x0B82 ], [ 0x0BC0, 0x0BC0 ],
+    [ 0x0BCD, 0x0BCD ], [ 0x0C3E, 0x0C40 ], [ 0x0C46, 0x0C48 ],
+    [ 0x0C4A, 0x0C4D ], [ 0x0C55, 0x0C56 ], [ 0x0CBC, 0x0CBC ],
+    [ 0x0CBF, 0x0CBF ], [ 0x0CC6, 0x0CC6 ], [ 0x0CCC, 0x0CCD ],
+    [ 0x0CE2, 0x0CE3 ], [ 0x0D41, 0x0D43 ], [ 0x0D4D, 0x0D4D ],
+    [ 0x0DCA, 0x0DCA ], [ 0x0DD2, 0x0DD4 ], [ 0x0DD6, 0x0DD6 ],
+    [ 0x0E31, 0x0E31 ], [ 0x0E34, 0x0E3A ], [ 0x0E47, 0x0E4E ],
+    [ 0x0EB1, 0x0EB1 ], [ 0x0EB4, 0x0EB9 ], [ 0x0EBB, 0x0EBC ],
+    [ 0x0EC8, 0x0ECD ], [ 0x0F18, 0x0F19 ], [ 0x0F35, 0x0F35 ],
+    [ 0x0F37, 0x0F37 ], [ 0x0F39, 0x0F39 ], [ 0x0F71, 0x0F7E ],
+    [ 0x0F80, 0x0F84 ], [ 0x0F86, 0x0F87 ], [ 0x0F90, 0x0F97 ],
+    [ 0x0F99, 0x0FBC ], [ 0x0FC6, 0x0FC6 ], [ 0x102D, 0x1030 ],
+    [ 0x1032, 0x1032 ], [ 0x1036, 0x1037 ], [ 0x1039, 0x1039 ],
+    [ 0x1058, 0x1059 ], [ 0x1160, 0x11FF ], [ 0x135F, 0x135F ],
+    [ 0x1712, 0x1714 ], [ 0x1732, 0x1734 ], [ 0x1752, 0x1753 ],
+    [ 0x1772, 0x1773 ], [ 0x17B4, 0x17B5 ], [ 0x17B7, 0x17BD ],
+    [ 0x17C6, 0x17C6 ], [ 0x17C9, 0x17D3 ], [ 0x17DD, 0x17DD ],
+    [ 0x180B, 0x180D ], [ 0x18A9, 0x18A9 ], [ 0x1920, 0x1922 ],
+    [ 0x1927, 0x1928 ], [ 0x1932, 0x1932 ], [ 0x1939, 0x193B ],
+    [ 0x1A17, 0x1A18 ], [ 0x1B00, 0x1B03 ], [ 0x1B34, 0x1B34 ],
+    [ 0x1B36, 0x1B3A ], [ 0x1B3C, 0x1B3C ], [ 0x1B42, 0x1B42 ],
+    [ 0x1B6B, 0x1B73 ], [ 0x1DC0, 0x1DCA ], [ 0x1DFE, 0x1DFF ],
+    [ 0x200B, 0x200F ], [ 0x202A, 0x202E ], [ 0x2060, 0x2063 ],
+    [ 0x206A, 0x206F ], [ 0x20D0, 0x20EF ], [ 0x302A, 0x302F ],
+    [ 0x3099, 0x309A ], [ 0xA806, 0xA806 ], [ 0xA80B, 0xA80B ],
+    [ 0xA825, 0xA826 ], [ 0xFB1E, 0xFB1E ], [ 0xFE00, 0xFE0F ],
+    [ 0xFE20, 0xFE23 ], [ 0xFEFF, 0xFEFF ], [ 0xFFF9, 0xFFFB ],
+    [ 0x10A01, 0x10A03 ], [ 0x10A05, 0x10A06 ], [ 0x10A0C, 0x10A0F ],
+    [ 0x10A38, 0x10A3A ], [ 0x10A3F, 0x10A3F ], [ 0x1D167, 0x1D169 ],
+    [ 0x1D173, 0x1D182 ], [ 0x1D185, 0x1D18B ], [ 0x1D1AA, 0x1D1AD ],
+    [ 0x1D242, 0x1D244 ], [ 0xE0001, 0xE0001 ], [ 0xE0020, 0xE007F ],
+    [ 0xE0100, 0xE01EF ]
+]
+
+
+/***/ }),
+
+/***/ 5917:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var defaults = __nccwpck_require__(732)
+var combining = __nccwpck_require__(4383)
+
+var DEFAULTS = {
+  nul: 0,
+  control: 0
+}
+
+module.exports = function wcwidth(str) {
+  return wcswidth(str, DEFAULTS)
+}
+
+module.exports.config = function(opts) {
+  opts = defaults(opts || {}, DEFAULTS)
+  return function wcwidth(str) {
+    return wcswidth(str, opts)
+  }
+}
+
+/*
+ *  The following functions define the column width of an ISO 10646
+ *  character as follows:
+ *  - The null character (U+0000) has a column width of 0.
+ *  - Other C0/C1 control characters and DEL will lead to a return value
+ *    of -1.
+ *  - Non-spacing and enclosing combining characters (general category
+ *    code Mn or Me in the
+ *    Unicode database) have a column width of 0.
+ *  - SOFT HYPHEN (U+00AD) has a column width of 1.
+ *  - Other format characters (general category code Cf in the Unicode
+ *    database) and ZERO WIDTH
+ *    SPACE (U+200B) have a column width of 0.
+ *  - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF)
+ *    have a column width of 0.
+ *  - Spacing characters in the East Asian Wide (W) or East Asian
+ *    Full-width (F) category as
+ *    defined in Unicode Technical Report #11 have a column width of 2.
+ *  - All remaining characters (including all printable ISO 8859-1 and
+ *    WGL4 characters, Unicode control characters, etc.) have a column
+ *    width of 1.
+ *  This implementation assumes that characters are encoded in ISO 10646.
+*/
+
+function wcswidth(str, opts) {
+  if (typeof str !== 'string') return wcwidth(str, opts)
+
+  var s = 0
+  for (var i = 0; i < str.length; i++) {
+    var n = wcwidth(str.charCodeAt(i), opts)
+    if (n < 0) return -1
+    s += n
+  }
+
+  return s
+}
+
+function wcwidth(ucs, opts) {
+  // test for 8-bit control characters
+  if (ucs === 0) return opts.nul
+  if (ucs < 32 || (ucs >= 0x7f && ucs < 0xa0)) return opts.control
+
+  // binary search in table of non-spacing characters
+  if (bisearch(ucs)) return 0
+
+  // if we arrive here, ucs is not a combining or C0/C1 control character
+  return 1 +
+      (ucs >= 0x1100 &&
+       (ucs <= 0x115f ||                       // Hangul Jamo init. consonants
+        ucs == 0x2329 || ucs == 0x232a ||
+        (ucs >= 0x2e80 && ucs <= 0xa4cf &&
+         ucs != 0x303f) ||                     // CJK ... Yi
+        (ucs >= 0xac00 && ucs <= 0xd7a3) ||    // Hangul Syllables
+        (ucs >= 0xf900 && ucs <= 0xfaff) ||    // CJK Compatibility Ideographs
+        (ucs >= 0xfe10 && ucs <= 0xfe19) ||    // Vertical forms
+        (ucs >= 0xfe30 && ucs <= 0xfe6f) ||    // CJK Compatibility Forms
+        (ucs >= 0xff00 && ucs <= 0xff60) ||    // Fullwidth Forms
+        (ucs >= 0xffe0 && ucs <= 0xffe6) ||
+        (ucs >= 0x20000 && ucs <= 0x2fffd) ||
+        (ucs >= 0x30000 && ucs <= 0x3fffd)));
+}
+
+function bisearch(ucs) {
+  var min = 0
+  var max = combining.length - 1
+  var mid
+
+  if (ucs < combining[0][0] || ucs > combining[max][1]) return false
+
+  while (max >= min) {
+    mid = Math.floor((min + max) / 2)
+    if (ucs > combining[mid][1]) min = mid + 1
+    else if (ucs < combining[mid][0]) max = mid - 1
+    else return true
+  }
+
+  return false
+}
+
+
+/***/ }),
+
 /***/ 4886:
 /***/ ((module) => {
 
@@ -10928,7 +11842,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Outdated = void 0;
 const child_process_1 = __nccwpck_require__(2081);
 const strip_ansi_1 = __importDefault(__nccwpck_require__(8770));
-const not_a_log_1 = __importDefault(__nccwpck_require__(4218));
+let columnify = __nccwpck_require__(1994);
 const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
 class Outdated {
     constructor() {
@@ -10987,7 +11901,7 @@ class Outdated {
             };
             formatted.push(entry);
         }
-        const body = not_a_log_1.default.table(formatted);
+        const body = columnify(formatted);
         return `\`\`\`\n${(0, strip_ansi_1.default)(body)}\n\`\`\``;
     }
 }
@@ -11145,46 +12059,6 @@ module.exports = require("util");
 
 "use strict";
 module.exports = require("zlib");
-
-/***/ }),
-
-/***/ 4218:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-"use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "default": () => (/* binding */ not_a_log)
-});
-
-;// CONCATENATED MODULE: external "console"
-const external_console_namespaceObject = require("console");
-// EXTERNAL MODULE: external "stream"
-var external_stream_ = __nccwpck_require__(2781);
-;// CONCATENATED MODULE: ./node_modules/not-a-log/not-a-log.js
-/*! not-a-logger. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
-
-
-
-const ts = new external_stream_.Transform({ transform: (chunk, _, cb) => cb(null, chunk) })
-const logger = new external_console_namespaceObject.Console({ stdout: ts, stderr: ts, colorMode: false })
-const handler = {
-  get (_, prop) {
-    return new Proxy(logger[prop], handler)
-  },
-  apply (target, _, args) {
-    target.apply(logger, args)
-    return (ts.read() || '').toString()
-  }
-}
-
-/** @type {typeof console} */
-const dump = new Proxy(logger, handler)
-/* harmony default export */ const not_a_log = (dump);
-
 
 /***/ }),
 
