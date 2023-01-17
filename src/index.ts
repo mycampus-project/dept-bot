@@ -1,11 +1,46 @@
 import * as core from '@actions/core'
 import { Octokit } from '@octokit/action';
 import { Audit } from './audit';
+import { Outdated } from './outdated';
 
 async function run(): Promise<void> {
 
   try {
-
+        // run `npm outdated`
+        const outdated = new Outdated()
+        outdated.run()
+        core.info(outdated.stdout)
+        core.setOutput('npm_outdated', outdated.stdout)
+    
+        if (outdated.foundOutdated()) {
+          // outdated versions are found
+    
+          core.debug('open an issue')
+    
+          // remove control characters and create a code block
+          const issueBody = outdated.strippedStdout()
+    
+          const octokit = new Octokit();
+          const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
+          const { data } = await octokit.request("POST /repos/{owner}/{repo}/issues", {
+            owner,
+            repo,
+            title: "Outdated dependenices found",
+            body: issueBody
+          });
+          console.log("Issue created: %s", data.html_url);
+          core.debug(owner + "/" + repo)
+          core.debug(data.html_url);
+    
+          core.setFailed('This repo has outdated packages')
+        }
+      }
+      catch (e: unknown) {
+        if (e instanceof Error) {
+          core.setFailed(e.message)
+        }
+      }
+/*
     // run `npm audit`
     const audit = new Audit()
     audit.run('info', 'true', 'true')
@@ -40,5 +75,6 @@ async function run(): Promise<void> {
       core.setFailed(e.message)
     }
   }
+  */
 }
 run()

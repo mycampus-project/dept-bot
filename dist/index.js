@@ -10835,68 +10835,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 4314:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Audit = void 0;
-const child_process_1 = __nccwpck_require__(2081);
-const strip_ansi_1 = __importDefault(__nccwpck_require__(8770));
-const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
-class Audit {
-    constructor() {
-        this.stdout = '';
-        this.status = null;
-    }
-    run(auditLevel, productionFlag, jsonFlag) {
-        try {
-            const auditOptions = ['audit', '--audit-level', auditLevel];
-            const isWindowsEnvironment = process.platform == 'win32';
-            const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
-            if (productionFlag === 'true') {
-                auditOptions.push('--omit=dev');
-            }
-            if (jsonFlag === 'true') {
-                auditOptions.push('--json');
-            }
-            const result = (0, child_process_1.spawnSync)(cmd, auditOptions, {
-                encoding: 'utf-8',
-                maxBuffer: SPAWN_PROCESS_BUFFER_SIZE
-            });
-            if (result.error) {
-                throw result.error;
-            }
-            if (result.status === null) {
-                throw new Error('the subprocess terminated due to a signal.');
-            }
-            if (result.stderr && result.stderr.length > 0) {
-                throw new Error(result.stderr);
-            }
-            this.status = result.status;
-            this.stdout = result.stdout;
-        }
-        catch (error) {
-            throw error;
-        }
-    }
-    foundVulnerability() {
-        // `npm audit` return 1 when it found vulnerabilities
-        return this.status === 1;
-    }
-    strippedStdout() {
-        return `\`\`\`\n${(0, strip_ansi_1.default)(this.stdout)}\n\`\`\``;
-    }
-}
-exports.Audit = Audit;
-
-
-/***/ }),
-
 /***/ 6144:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -10937,33 +10875,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
-const audit_1 = __nccwpck_require__(4314);
+const outdated_1 = __nccwpck_require__(3439);
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // run `npm audit`
-            const audit = new audit_1.Audit();
-            audit.run('info', 'true', 'true');
-            core.info(audit.stdout);
-            core.setOutput('npm_audit', audit.stdout);
-            if (audit.foundVulnerability()) {
-                // vulnerabilities are found
+            // run `npm outdated`
+            const outdated = new outdated_1.Outdated();
+            outdated.run();
+            core.info(outdated.stdout);
+            core.setOutput('npm_outdated', outdated.stdout);
+            if (outdated.foundOutdated()) {
+                // outdated versions are found
                 core.debug('open an issue');
                 // remove control characters and create a code block
-                const issueBody = audit.strippedStdout();
+                const issueBody = outdated.strippedStdout();
                 const octokit = new action_1.Octokit();
                 const [owner, repo] = ((_a = process.env.GITHUB_REPOSITORY) !== null && _a !== void 0 ? _a : "a/b").split("/");
                 const { data } = yield octokit.request("POST /repos/{owner}/{repo}/issues", {
                     owner,
                     repo,
-                    title: "Vulnerabilities found",
+                    title: "Outdated dependenices found",
                     body: issueBody
                 });
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
-                core.setFailed('This repo has some vulnerabilities');
+                core.setFailed('This repo has outdated packages');
             }
         }
         catch (e) {
@@ -10974,6 +10912,62 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 3439:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Outdated = void 0;
+const child_process_1 = __nccwpck_require__(2081);
+const strip_ansi_1 = __importDefault(__nccwpck_require__(8770));
+const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
+class Outdated {
+    constructor() {
+        this.stdout = '';
+        this.status = null;
+    }
+    run() {
+        try {
+            const outdatedOptions = ['outdated'];
+            const isWindowsEnvironment = process.platform == 'win32';
+            const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
+            const result = (0, child_process_1.spawnSync)(cmd, outdatedOptions, {
+                encoding: 'utf-8',
+                maxBuffer: SPAWN_PROCESS_BUFFER_SIZE
+            });
+            if (result.error) {
+                throw result.error;
+            }
+            if (result.status === null) {
+                throw new Error('the subprocess terminated due to a signal.');
+            }
+            if (result.stderr && result.stderr.length > 0) {
+                throw new Error(result.stderr);
+            }
+            this.status = result.status;
+            this.stdout = result.stdout;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    foundOutdated() {
+        // `npm audit` return 1 when it found vulnerabilities
+        return this.status === 1;
+    }
+    strippedStdout() {
+        return `\`\`\`\n${(0, strip_ansi_1.default)(this.stdout)}\n\`\`\``;
+    }
+}
+exports.Outdated = Outdated;
 
 
 /***/ }),
