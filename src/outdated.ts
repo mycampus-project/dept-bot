@@ -55,10 +55,20 @@ export class Outdated {
             let current: Number = json[dept]["current"].split(".")[0];
             let latest: Number = json[dept]["latest"].split(".")[0];
             if(latest > current) {
+                json[dept].name = json.dept
               majors.push(json[dept]);
             }
           }
-          const body = logger.table(majors) ;
+          const formatted = []
+          for (var dep in majors) {
+            let entry = {
+                name: majors[dep]["name"],
+                latest: majors[dep]["latest"],
+                current: majors[dep]["current"]
+            }
+            formatted.push(entry)
+          }
+          const body = logger.table(formatted) ;
     return `\`\`\`\n${stripAnsi(body)}\n\`\`\``
   }
 }

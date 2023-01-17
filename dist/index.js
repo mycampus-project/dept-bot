@@ -10928,6 +10928,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Outdated = void 0;
 const child_process_1 = __nccwpck_require__(2081);
 const strip_ansi_1 = __importDefault(__nccwpck_require__(8770));
+const not_a_log_1 = __importDefault(__nccwpck_require__(4218));
 const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
 class Outdated {
     constructor() {
@@ -10973,10 +10974,20 @@ class Outdated {
             let current = json[dept]["current"].split(".")[0];
             let latest = json[dept]["latest"].split(".")[0];
             if (latest > current) {
+                json[dept].name = json.dept;
                 majors.push(json[dept]);
             }
         }
-        const body = JSON.stringify(majors);
+        const formatted = [];
+        for (var dep in majors) {
+            let entry = {
+                name: majors[dep]["name"],
+                latest: majors[dep]["latest"],
+                current: majors[dep]["current"]
+            };
+            formatted.push(entry);
+        }
+        const body = not_a_log_1.default.table(formatted);
         return `\`\`\`\n${(0, strip_ansi_1.default)(body)}\n\`\`\``;
     }
 }
@@ -11134,6 +11145,46 @@ module.exports = require("util");
 
 "use strict";
 module.exports = require("zlib");
+
+/***/ }),
+
+/***/ 4218:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "default": () => (/* binding */ not_a_log)
+});
+
+;// CONCATENATED MODULE: external "console"
+const external_console_namespaceObject = require("console");
+// EXTERNAL MODULE: external "stream"
+var external_stream_ = __nccwpck_require__(2781);
+;// CONCATENATED MODULE: ./node_modules/not-a-log/not-a-log.js
+/*! not-a-logger. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
+
+
+
+const ts = new external_stream_.Transform({ transform: (chunk, _, cb) => cb(null, chunk) })
+const logger = new external_console_namespaceObject.Console({ stdout: ts, stderr: ts, colorMode: false })
+const handler = {
+  get (_, prop) {
+    return new Proxy(logger[prop], handler)
+  },
+  apply (target, _, args) {
+    target.apply(logger, args)
+    return (ts.read() || '').toString()
+  }
+}
+
+/** @type {typeof console} */
+const dump = new Proxy(logger, handler)
+/* harmony default export */ const not_a_log = (dump);
+
 
 /***/ }),
 
