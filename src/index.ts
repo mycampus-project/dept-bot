@@ -8,7 +8,7 @@ async function run(): Promise<void> {
   try {
         // run `npm outdated`
         const outdated = new Outdated()
-        outdated.run()
+        outdated.run('true')
         core.info(outdated.stdout)
         core.setOutput('npm_outdated', outdated.stdout)
     

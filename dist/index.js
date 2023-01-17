@@ -10882,7 +10882,7 @@ function run() {
         try {
             // run `npm outdated`
             const outdated = new outdated_1.Outdated();
-            outdated.run();
+            outdated.run('true');
             core.info(outdated.stdout);
             core.setOutput('npm_outdated', outdated.stdout);
             if (outdated.foundOutdated()) {
@@ -10934,11 +10934,14 @@ class Outdated {
         this.stdout = '';
         this.status = null;
     }
-    run() {
+    run(jsonFlag) {
         try {
             const outdatedOptions = ['outdated'];
             const isWindowsEnvironment = process.platform == 'win32';
             const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
+            if (jsonFlag === 'true') {
+                outdatedOptions.push('--json');
+            }
             const result = (0, child_process_1.spawnSync)(cmd, outdatedOptions, {
                 encoding: 'utf-8',
                 maxBuffer: SPAWN_PROCESS_BUFFER_SIZE

@@ -8,13 +8,17 @@ export class Outdated {
   private status: number | null = null
 
   public run(
-   
+    jsonFlag: string
   ): void {
     try {
       const outdatedOptions: Array<string> = ['outdated']
 
       const isWindowsEnvironment: boolean = process.platform == 'win32'
       const cmd: string = isWindowsEnvironment ? 'npm.cmd' : 'npm'
+
+      if (jsonFlag === 'true') {
+        outdatedOptions.push('--json')
+      }
 
       const result: SpawnSyncReturns<string> = spawnSync(cmd, outdatedOptions, {
         encoding: 'utf-8',
