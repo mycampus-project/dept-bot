@@ -56,7 +56,7 @@ export class Outdated {
             let current: Number = json[dept]["current"].split(".")[0];
             let latest: Number = json[dept]["latest"].split(".")[0];
             if(latest > current) {
-                json[dept].name = json.dept
+                json[dept].name = dept
               majors.push(json[dept]);
             }
           }
@@ -64,8 +64,8 @@ export class Outdated {
           for (var dep in majors) {
             let entry = {
                 name: majors[dep]["name"],
+                current: majors[dep]["current"],
                 latest: majors[dep]["latest"],
-                current: majors[dep]["current"]
             }
             formatted.push(entry)
           }
