@@ -72,6 +72,6 @@ export class Outdated {
             formatted.push(entry)
           }
           const body = columnify(formatted) ;
-    return `The following dependecies must be updated manually\n\`\`\`\n${body}\n\`\`\``
+    return `The following dependencies must be updated manually\n\`\`\`\n${body}\n\`\`\``
   }
 }

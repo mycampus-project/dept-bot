@@ -16,7 +16,7 @@ async function run(): Promise<void> {
           // outdated versions are found
     
           core.debug('open an issue')
-    
+     
           // remove control characters and create a code block
           const issueBody = outdated.strippedStdout()
           
