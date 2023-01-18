@@ -25,7 +25,7 @@ async function run(): Promise<void> {
           const { data } = await octokit.request("POST /repos/{owner}/{repo}/issues", {
             owner,
             repo,
-            title: "Outdated dependenices found",
+            title: "Manual action required",
             body: issueBody
           });
           console.log("Issue created: %s", data.html_url);

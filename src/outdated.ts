@@ -65,11 +65,13 @@ export class Outdated {
             let entry = {
                 name: majors[dep]["name"],
                 current: majors[dep]["current"],
+                wanted: majors[dep]["wanted"],
                 latest: majors[dep]["latest"],
+                dependent: majors[dep]["dependent"],
             }
             formatted.push(entry)
           }
           const body = columnify(formatted) ;
-    return `\`\`\`\n${stripAnsi(body)}\n\`\`\``
+    return `The following dependecies must be updated manually\n\`\`\`\n${body}\n\`\`\``
   }
 }
