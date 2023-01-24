@@ -20,6 +20,7 @@
     "@octokit/action": "^4.0.10",
     "columnify": "^1.6.0",
     "not-a-log": "^1.0.1",
+    "octokit-plugin-create-pull-request": "^4.1.1",
     "strip-ansi": "^7.0.1"
   }
 }
