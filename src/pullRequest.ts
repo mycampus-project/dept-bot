@@ -9,17 +9,26 @@ export async function pullRequest() {
         .createPullRequest({
             owner: "mycampus-project",
             repo: "mycampus-main-news",
-            title: "Test PR",
-            body: "test pr pls ignore",
-            head: "test-branch",
+            title: "Update dependencies",
+            body: "Updated dependencies",
+            head: "depts",
             //base: "main" /* optional: defaults to default branch */,
-            update: false /* optional: set to `true` to enable updating existing pull requests */,
+            update: true /* optional: set to `true` to enable updating existing pull requests */,
             forceFork: false /* optional: force creating fork even when user has write rights */,
             changes: [
                 {
                     /* optional: if `files` is not passed, an empty commit is created instead */
                     files: {
-                        "test.txt": "moi",
+                        "package.json": ({exists, encoding, content}:
+                             {exists: any, encoding: any, content: any}) => {
+                            if(exists){}
+                            return Buffer.from(content, encoding).toString(encoding)
+                        },
+                        "package-lock.json": ({exists, encoding, content}:
+                            {exists: any, encoding: any, content: any}) => {
+                           if(exists){}
+                           return Buffer.from(content, encoding).toString(encoding)
+                       },
                         /*
                         "path/to/file2.png": {
                           content: "_base64_encoded_content_",
@@ -46,7 +55,7 @@ export async function pullRequest() {
                         */
                     },
                     commit:
-                        "test commit",
+                        "update dependencies",
                     /* optional: if not passed, will be the authenticated user and the current date */
                     author: {
                         name: "dept-bot",

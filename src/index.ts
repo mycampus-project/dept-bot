@@ -3,10 +3,21 @@ import { Octokit } from '@octokit/action';
 import { Audit } from './audit';
 import { Outdated } from './outdated';
 import { pullRequest } from './pullRequest';
+import { Update } from './update';
 
 async function run(): Promise<void> {
 
   try {
+
+        const update = new Update()
+        update.run('true')
+        core.info(update.stdout)
+        core.setOutput('npm_update', update.stdout)
+
+        if(update.didUpdate()) {
+          core.debug('Create a PR')
+          await pullRequest();
+        }
         // run `npm outdated`
         const outdated = new Outdated()
         outdated.run('true')
@@ -29,7 +40,7 @@ async function run(): Promise<void> {
             title: "Manual action required",
             body: issueBody
           });
-          await pullRequest();
+          
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);

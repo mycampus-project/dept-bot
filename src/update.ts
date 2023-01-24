@@ -1,4 +1,4 @@
-import {spawnSync, SpawnSyncReturns} from 'child_process'
+import { spawnSync, SpawnSyncReturns } from 'child_process'
 import stripAnsi from 'strip-ansi'
 import logger from 'not-a-log'
 let columnify = require('columnify')
@@ -27,7 +27,7 @@ export class Update {
         maxBuffer: SPAWN_PROCESS_BUFFER_SIZE
       })
 
-      if (result.error) { 
+      if (result.error) {
         throw result.error
       }
       if (result.status === null) {
@@ -49,29 +49,36 @@ export class Update {
     return this.status === 1
   }
 
+  public didUpdate(): boolean {
+    const json = JSON.parse(this.stdout)
+    return (json['added'] != 0 || 
+    json['removed'] != 0 || 
+    json['changed'] != 0)
+  }
+
   public strippedStdout(): string {
     const json = JSON.parse(this.stdout)
-          let majors = []
-          for (var dept in json) {
-            let current: Number = json[dept]["current"].split(".")[0];
-            let latest: Number = json[dept]["latest"].split(".")[0];
-            if(latest > current) {
-                json[dept].name = dept
-              majors.push(json[dept]);
-            }
-          }
-          const formatted = []
-          for (var dep in majors) {
-            let entry = {
-                name: majors[dep]["name"],
-                current: majors[dep]["current"],
-                wanted: majors[dep]["wanted"],
-                latest: majors[dep]["latest"],
-                dependent: majors[dep]["dependent"],
-            }
-            formatted.push(entry)
-          }
-          const body = columnify(formatted) ;
+    let majors = []
+    for (var dept in json) {
+      let current: Number = json[dept]["current"].split(".")[0];
+      let latest: Number = json[dept]["latest"].split(".")[0];
+      if (latest > current) {
+        json[dept].name = dept
+        majors.push(json[dept]);
+      }
+    }
+    const formatted = []
+    for (var dep in majors) {
+      let entry = {
+        name: majors[dep]["name"],
+        current: majors[dep]["current"],
+        wanted: majors[dep]["wanted"],
+        latest: majors[dep]["latest"],
+        dependent: majors[dep]["dependent"],
+      }
+      formatted.push(entry)
+    }
+    const body = columnify(formatted);
     return `The following dependencies must be updated manually\n\`\`\`\n${body}\n\`\`\``
   }
 }

@@ -12134,10 +12134,19 @@ const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
 const outdated_1 = __nccwpck_require__(3439);
 const pullRequest_1 = __nccwpck_require__(3894);
+const update_1 = __nccwpck_require__(8386);
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const update = new update_1.Update();
+            update.run('true');
+            core.info(update.stdout);
+            core.setOutput('npm_update', update.stdout);
+            if (update.didUpdate()) {
+                core.debug('Create a PR');
+                yield (0, pullRequest_1.pullRequest)();
+            }
             // run `npm outdated`
             const outdated = new outdated_1.Outdated();
             outdated.run('true');
@@ -12156,7 +12165,6 @@ function run() {
                     title: "Manual action required",
                     body: issueBody
                 });
-                yield (0, pullRequest_1.pullRequest)();
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
@@ -12279,17 +12287,24 @@ function pullRequest() {
             .createPullRequest({
             owner: "mycampus-project",
             repo: "mycampus-main-news",
-            title: "Test PR",
-            body: "test pr pls ignore",
-            head: "test-branch",
+            title: "Update dependencies",
+            body: "Updated dependencies",
+            head: "depts",
             //base: "main" /* optional: defaults to default branch */,
-            update: false /* optional: set to `true` to enable updating existing pull requests */,
+            update: true /* optional: set to `true` to enable updating existing pull requests */,
             forceFork: false /* optional: force creating fork even when user has write rights */,
             changes: [
                 {
                     /* optional: if `files` is not passed, an empty commit is created instead */
                     files: {
-                        "test.txt": "moi",
+                        "package.json": ({ exists, encoding, content }) => {
+                            if (exists) { }
+                            return Buffer.from(content, encoding).toString(encoding);
+                        },
+                        "package-lock.json": ({ exists, encoding, content }) => {
+                            if (exists) { }
+                            return Buffer.from(content, encoding).toString(encoding);
+                        },
                         /*
                         "path/to/file2.png": {
                           content: "_base64_encoded_content_",
@@ -12315,7 +12330,7 @@ function pullRequest() {
                         },
                         */
                     },
-                    commit: "test commit",
+                    commit: "update dependencies",
                     /* optional: if not passed, will be the authenticated user and the current date */
                     author: {
                         name: "dept-bot",
@@ -12337,6 +12352,90 @@ function pullRequest() {
     });
 }
 exports.pullRequest = pullRequest;
+
+
+/***/ }),
+
+/***/ 8386:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Update = void 0;
+const child_process_1 = __nccwpck_require__(2081);
+let columnify = __nccwpck_require__(1994);
+const SPAWN_PROCESS_BUFFER_SIZE = 10485760; // 10MiB
+class Update {
+    constructor() {
+        this.stdout = '';
+        this.status = null;
+    }
+    run(jsonFlag) {
+        try {
+            const outdatedOptions = ['update', '--save'];
+            const isWindowsEnvironment = process.platform == 'win32';
+            const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
+            if (jsonFlag === 'true') {
+                outdatedOptions.push('--json');
+            }
+            const result = (0, child_process_1.spawnSync)(cmd, outdatedOptions, {
+                encoding: 'utf-8',
+                maxBuffer: SPAWN_PROCESS_BUFFER_SIZE
+            });
+            if (result.error) {
+                throw result.error;
+            }
+            if (result.status === null) {
+                throw new Error('the subprocess terminated due to a signal.');
+            }
+            if (result.stderr && result.stderr.length > 0) {
+                throw new Error(result.stderr);
+            }
+            this.status = result.status;
+            this.stdout = result.stdout;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    foundOutdated() {
+        // `npm audit` return 1 when it found vulnerabilities
+        return this.status === 1;
+    }
+    didUpdate() {
+        const json = JSON.parse(this.stdout);
+        return (json['added'] != 0 ||
+            json['removed'] != 0 ||
+            json['changed'] != 0);
+    }
+    strippedStdout() {
+        const json = JSON.parse(this.stdout);
+        let majors = [];
+        for (var dept in json) {
+            let current = json[dept]["current"].split(".")[0];
+            let latest = json[dept]["latest"].split(".")[0];
+            if (latest > current) {
+                json[dept].name = dept;
+                majors.push(json[dept]);
+            }
+        }
+        const formatted = [];
+        for (var dep in majors) {
+            let entry = {
+                name: majors[dep]["name"],
+                current: majors[dep]["current"],
+                wanted: majors[dep]["wanted"],
+                latest: majors[dep]["latest"],
+                dependent: majors[dep]["dependent"],
+            };
+            formatted.push(entry);
+        }
+        const body = columnify(formatted);
+        return `The following dependencies must be updated manually\n\`\`\`\n${body}\n\`\`\``;
+    }
+}
+exports.Update = Update;
 
 
 /***/ }),
