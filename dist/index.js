@@ -12299,11 +12299,11 @@ function pullRequest() {
                     files: {
                         "package.json": ({ exists, encoding, content }) => {
                             if (exists) { }
-                            return Buffer.from(content, encoding).toString(encoding);
+                            return Buffer.from(content, encoding).toString('utf-8');
                         },
                         "package-lock.json": ({ exists, encoding, content }) => {
                             if (exists) { }
-                            return Buffer.from(content, encoding).toString(encoding);
+                            return Buffer.from(content, encoding).toString('utf-8');
                         },
                         /*
                         "path/to/file2.png": {
