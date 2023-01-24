@@ -16,6 +16,7 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
+    "@azure/arm-containerregistry": "^10.0.0",
     "@octokit/action": "^4.0.10",
     "columnify": "^1.6.0",
     "not-a-log": "^1.0.1",

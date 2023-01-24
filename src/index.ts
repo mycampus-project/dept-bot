@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import { Octokit } from '@octokit/action';
 import { Audit } from './audit';
 import { Outdated } from './outdated';
+import { pullRequest } from './pullRequest';
 
 async function run(): Promise<void> {
 
@@ -28,6 +29,7 @@ async function run(): Promise<void> {
             title: "Manual action required",
             body: issueBody
           });
+          await pullRequest();
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);

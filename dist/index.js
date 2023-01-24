@@ -11790,6 +11790,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
 const outdated_1 = __nccwpck_require__(3439);
+const pullRequest_1 = __nccwpck_require__(3894);
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -11812,6 +11813,7 @@ function run() {
                     title: "Manual action required",
                     body: issueBody
                 });
+                yield (0, pullRequest_1.pullRequest)();
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
@@ -11908,10 +11910,105 @@ exports.Outdated = Outdated;
 
 /***/ }),
 
+/***/ 3894:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pullRequest = void 0;
+const action_1 = __nccwpck_require__(1231);
+const { createPullRequest } = __nccwpck_require__(5359);
+function pullRequest() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = action_1.Octokit.plugin(createPullRequest);
+        octokit
+            .createPullRequest({
+            owner: "Nokia",
+            repo: "mycampus-main-news",
+            title: "Test PR",
+            body: "test pr pls ignore",
+            head: "test-branch",
+            //base: "main" /* optional: defaults to default branch */,
+            update: false /* optional: set to `true` to enable updating existing pull requests */,
+            forceFork: false /* optional: force creating fork even when user has write rights */,
+            changes: [
+                {
+                    /* optional: if `files` is not passed, an empty commit is created instead */
+                    files: {
+                        "test.txt": "moi",
+                        /*
+                        "path/to/file2.png": {
+                          content: "_base64_encoded_content_",
+                          encoding: "base64",
+                        },
+                        // deletes file if it exists,
+                        "path/to/file3.txt": null,
+                        // updates file based on current content
+                        "path/to/file4.txt": ({ exists, encoding, content }) => {
+                          // do not create the file if it does not exist
+                          if (!exists) return null;
+              
+                          return Buffer.from(content, encoding)
+                            .toString("utf-8")
+                            .toUpperCase();
+                        },
+                        "path/to/file5.sh": {
+                          content: "echo Hello World",
+                          encoding: "utf-8",
+                          // one of the modes supported by the git tree object
+                          // https://developer.github.com/v3/git/trees/#tree-object
+                          mode: "100755",
+                        },
+                        */
+                    },
+                    commit: "test commit",
+                    /* optional: if not passed, will be the authenticated user and the current date */
+                    author: {
+                        name: "dept-bot",
+                        email: "none@nokia.com",
+                        date: new Date().toISOString(), // must be ISO date string
+                    },
+                    /*
+                    //optional: if not passed, will use the information set in author
+                    committer: {
+                      name: "Committer LastName",
+                      email: "Committer.LastName@acme.com",
+                      date: new Date().toISOString(), // must be ISO date string
+                    },
+                    */
+                },
+            ],
+        })
+            .then((pr) => console.log(pr.data.number));
+    });
+}
+exports.pullRequest = pullRequest;
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 5359:
+/***/ ((module) => {
+
+module.exports = eval("require")("octokit-plugin-create-pull-request");
 
 
 /***/ }),

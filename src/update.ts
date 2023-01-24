@@ -5,7 +5,7 @@ let columnify = require('columnify')
 
 const SPAWN_PROCESS_BUFFER_SIZE = 10485760 // 10MiB
 
-export class Outdated {
+export class Update {
   stdout = ''
   private status: number | null = null
 
@@ -13,7 +13,7 @@ export class Outdated {
     jsonFlag: string
   ): void {
     try {
-      const outdatedOptions: Array<string> = ['outdated']
+      const outdatedOptions: Array<string> = ['update', '--save']
 
       const isWindowsEnvironment: boolean = process.platform == 'win32'
       const cmd: string = isWindowsEnvironment ? 'npm.cmd' : 'npm'
