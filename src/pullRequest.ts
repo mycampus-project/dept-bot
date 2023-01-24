@@ -7,7 +7,7 @@ export async function pullRequest() {
     const octokit = new mOctokit();
     octokit
         .createPullRequest({
-            owner: "Nokia",
+            owner: "mycampus-project",
             repo: "mycampus-main-news",
             title: "Test PR",
             body: "test pr pls ignore",
