@@ -12273,7 +12273,8 @@ const action_1 = __nccwpck_require__(1231);
 const { createPullRequest } = __nccwpck_require__(6205);
 function pullRequest() {
     return __awaiter(this, void 0, void 0, function* () {
-        const octokit = action_1.Octokit.plugin(createPullRequest);
+        const mOctokit = action_1.Octokit.plugin(createPullRequest);
+        const octokit = new mOctokit();
         octokit
             .createPullRequest({
             owner: "Nokia",

@@ -3,7 +3,8 @@ const { createPullRequest } = require("octokit-plugin-create-pull-request");
 
 export async function pullRequest() {
 
-    const octokit: any = Octokit.plugin(createPullRequest);
+    const mOctokit = Octokit.plugin(createPullRequest);
+    const octokit = new mOctokit();
     octokit
         .createPullRequest({
             owner: "Nokia",
