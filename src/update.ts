@@ -13,7 +13,7 @@ export class Update {
     jsonFlag: string
   ): void {
     try {
-      const outdatedOptions: Array<string> = ['update', '--save']
+      const outdatedOptions: Array<string> = ['update', '--save', '--legacy-peer-deps']
 
       const isWindowsEnvironment: boolean = process.platform == 'win32'
       const cmd: string = isWindowsEnvironment ? 'npm.cmd' : 'npm'

@@ -12373,7 +12373,7 @@ class Update {
     }
     run(jsonFlag) {
         try {
-            const outdatedOptions = ['update', '--save'];
+            const outdatedOptions = ['update', '--save', '--legacy-peer-deps'];
             const isWindowsEnvironment = process.platform == 'win32';
             const cmd = isWindowsEnvironment ? 'npm.cmd' : 'npm';
             if (jsonFlag === 'true') {
