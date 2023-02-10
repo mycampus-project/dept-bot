@@ -11,7 +11,7 @@ async function run(): Promise<void> {
   try {
 
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
-
+    
 
       const res = await registerRepo(owner, repo);
 
