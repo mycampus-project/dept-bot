@@ -4,10 +4,16 @@ import { Audit } from './audit';
 import { Outdated } from './outdated';
 import { pullRequest } from './pullRequest';
 import { Update } from './update';
+import { registerRepo } from './register';
 
 async function run(): Promise<void> {
 
   try {
+
+    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
+
+
+      const res = await registerRepo(owner, repo);
 
         const update = new Update()
         update.run('true')
@@ -33,7 +39,6 @@ async function run(): Promise<void> {
           const issueBody = outdated.strippedStdout()
           
           const octokit = new Octokit();
-          const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
           const { data } = await octokit.request("POST /repos/{owner}/{repo}/issues", {
             owner,
             repo,

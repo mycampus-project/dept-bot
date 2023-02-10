@@ -19,3 +19,4 @@ jobs:
       - uses: tuoku/dept-bot@v1.0.14
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_URL: ${{ secrets.API_URL }}
