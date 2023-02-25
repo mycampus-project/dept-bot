@@ -14411,13 +14411,13 @@ const action_1 = __nccwpck_require__(1231);
 const outdated_1 = __nccwpck_require__(3439);
 const pullRequest_1 = __nccwpck_require__(3894);
 const update_1 = __nccwpck_require__(8386);
-const register_1 = __nccwpck_require__(7968);
+const postUpdate_1 = __nccwpck_require__(9493);
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
+        const [owner, repo] = ((_a = process.env.GITHUB_REPOSITORY) !== null && _a !== void 0 ? _a : "a/b").split("/");
         try {
-            const [owner, repo] = ((_a = process.env.GITHUB_REPOSITORY) !== null && _a !== void 0 ? _a : "a/b").split("/");
-            const res = yield (0, register_1.registerRepo)(owner, repo);
+            (0, postUpdate_1.postUpdate)(owner, repo, "running");
             const update = new update_1.Update();
             update.run('true');
             core.info(update.stdout);
@@ -14446,11 +14446,16 @@ function run() {
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
+                (0, postUpdate_1.postUpdate)(owner, repo, "majors");
                 core.setFailed('This repo has outdated packages');
+            }
+            else {
+                (0, postUpdate_1.postUpdate)(owner, repo, "success");
             }
         }
         catch (e) {
             if (e instanceof Error) {
+                (0, postUpdate_1.postUpdate)(owner, repo, "failed");
                 core.setFailed(e.message);
             }
         }
@@ -14535,6 +14540,64 @@ class Outdated {
     }
 }
 exports.Outdated = Outdated;
+
+
+/***/ }),
+
+/***/ 9493:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.postUpdate = void 0;
+const axios_1 = __importDefault(__nccwpck_require__(8757));
+const core = __importStar(__nccwpck_require__(2186));
+const postUpdate = (owner, repo, status) => __awaiter(void 0, void 0, void 0, function* () {
+    const apiUrl = core.getInput("API_URL");
+    const res = yield axios_1.default.post(apiUrl + '/repo/update', {
+        owner: owner,
+        repo: repo,
+        status: status
+    });
+    return res;
+});
+exports.postUpdate = postUpdate;
 
 
 /***/ }),
@@ -14630,63 +14693,6 @@ function pullRequest() {
     });
 }
 exports.pullRequest = pullRequest;
-
-
-/***/ }),
-
-/***/ 7968:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.registerRepo = void 0;
-const axios_1 = __importDefault(__nccwpck_require__(8757));
-const core = __importStar(__nccwpck_require__(2186));
-const registerRepo = (owner, repo) => __awaiter(void 0, void 0, void 0, function* () {
-    const apiUrl = core.getInput("API_URL");
-    const res = yield axios_1.default.post(apiUrl + '/repo/register', {
-        owner: owner,
-        repo: repo
-    });
-    return res;
-});
-exports.registerRepo = registerRepo;
 
 
 /***/ }),

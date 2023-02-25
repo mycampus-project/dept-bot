@@ -5,15 +5,15 @@ import { Outdated } from './outdated';
 import { pullRequest } from './pullRequest';
 import { Update } from './update';
 import { registerRepo } from './register';
+import { postUpdate } from './postUpdate';
 
 async function run(): Promise<void> {
-
+const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
   try {
 
-    const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
     
-
-      const res = await registerRepo(owner, repo);
+    
+      postUpdate(owner, repo, "running");
 
         const update = new Update()
         update.run('true')
@@ -49,50 +49,18 @@ async function run(): Promise<void> {
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
-    
+          postUpdate(owner, repo, "majors");
           core.setFailed('This repo has outdated packages')
+        } else {
+          postUpdate(owner, repo, "success");
+
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
+          postUpdate(owner, repo, "failed");
           core.setFailed(e.message)
         }
       }
-/*
-    // run `npm audit`
-    const audit = new Audit()
-    audit.run('info', 'true', 'true')
-    core.info(audit.stdout)
-    core.setOutput('npm_audit', audit.stdout)
-
-    if (audit.foundVulnerability()) {
-      // vulnerabilities are found
-
-      core.debug('open an issue')
-
-      // remove control characters and create a code block
-      const issueBody = audit.strippedStdout()
-
-      const octokit = new Octokit();
-      const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
-      const { data } = await octokit.request("POST /repos/{owner}/{repo}/issues", {
-        owner,
-        repo,
-        title: "Vulnerabilities found",
-        body: issueBody
-      });
-      console.log("Issue created: %s", data.html_url);
-      core.debug(owner + "/" + repo)
-      core.debug(data.html_url);
-
-      core.setFailed('This repo has some vulnerabilities')
-    }
-  }
-  catch (e: unknown) {
-    if (e instanceof Error) {
-      core.setFailed(e.message)
-    }
-  }
-  */
 }
 run()
