@@ -6,9 +6,12 @@ import { pullRequest } from './pullRequest';
 import { Update } from './update';
 import { registerRepo } from './register';
 import { postUpdate } from './postUpdate';
+import { postRun } from './postRun';
 
 async function run(): Promise<void> {
 const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
+let minorsUpdated = 0;
+let majorsAvailable = false;
   try {
 
     
@@ -32,7 +35,7 @@ const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
     
         if (outdated.foundOutdated()) {
           // outdated versions are found
-    
+            majorsAvailable = true;
           core.debug('open an issue')
      
           // remove control characters and create a code block
@@ -50,15 +53,17 @@ const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
           postUpdate(owner, repo, "majors");
+          postRun("ok", "Updated minor versions, major upgrades available.")
           core.setFailed('This repo has outdated packages')
         } else {
           postUpdate(owner, repo, "success");
-
+          postRun("ok", "All dependencies up to date")
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
           postUpdate(owner, repo, "failed");
+          postRun("fail", "Failed to update.")
           core.setFailed(e.message)
         }
       }
