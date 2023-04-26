@@ -58,17 +58,17 @@ let majorsAvailable = false;
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
-          postUpdate(owner, repo, "majors", null);
+          postUpdate(owner, repo, "majors", JSON.stringify(pjson));
           postRun("ok", "Updated minor versions, major upgrades available.")
           core.setFailed('This repo has outdated packages')
         } else {
-          postUpdate(owner, repo, "success", null);
+          postUpdate(owner, repo, "success", JSON.stringify(pjson));
           postRun("ok", "All dependencies up to date")
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
-          postUpdate(owner, repo, "failed", null);
+          postUpdate(owner, repo, "failed", JSON.stringify(pjson));
           postRun("fail", "Failed to update.")
           core.setFailed(e.message)
         }

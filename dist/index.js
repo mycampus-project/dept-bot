@@ -14457,18 +14457,18 @@ function run() {
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
-                (0, postUpdate_1.postUpdate)(owner, repo, "majors", null);
+                (0, postUpdate_1.postUpdate)(owner, repo, "majors", JSON.stringify(pjson));
                 (0, postRun_1.postRun)("ok", "Updated minor versions, major upgrades available.");
                 core.setFailed('This repo has outdated packages');
             }
             else {
-                (0, postUpdate_1.postUpdate)(owner, repo, "success", null);
+                (0, postUpdate_1.postUpdate)(owner, repo, "success", JSON.stringify(pjson));
                 (0, postRun_1.postRun)("ok", "All dependencies up to date");
             }
         }
         catch (e) {
             if (e instanceof Error) {
-                (0, postUpdate_1.postUpdate)(owner, repo, "failed", null);
+                (0, postUpdate_1.postUpdate)(owner, repo, "failed", JSON.stringify(pjson));
                 (0, postRun_1.postRun)("fail", "Failed to update.");
                 core.setFailed(e.message);
             }
