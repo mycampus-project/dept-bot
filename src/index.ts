@@ -10,13 +10,15 @@ import { postRun } from './postRun';
 
 async function run(): Promise<void> {
 const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
+const pjson = require('../package.json');
 let minorsUpdated = 0;
 let majorsAvailable = false;
   try {
 
     
-    
-      postUpdate(owner, repo, "running");
+    console.log(pjson);
+    console.log(JSON.stringify(pjson));
+      postUpdate(owner, repo, "running", JSON.stringify(pjson));
 
         const update = new Update()
         update.run('true')
@@ -52,17 +54,17 @@ let majorsAvailable = false;
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
-          postUpdate(owner, repo, "majors");
+          postUpdate(owner, repo, "majors", null);
           postRun("ok", "Updated minor versions, major upgrades available.")
           core.setFailed('This repo has outdated packages')
         } else {
-          postUpdate(owner, repo, "success");
+          postUpdate(owner, repo, "success", null);
           postRun("ok", "All dependencies up to date")
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
-          postUpdate(owner, repo, "failed");
+          postUpdate(owner, repo, "failed", null);
           postRun("fail", "Failed to update.")
           core.setFailed(e.message)
         }
