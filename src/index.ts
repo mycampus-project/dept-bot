@@ -18,6 +18,10 @@ let majorsAvailable = false;
     
     console.log(pjson);
     console.log(JSON.stringify(pjson));
+    core.info("pjson")
+    core.info(pjson)
+    core.info("stringified")
+    core.info(JSON.stringify(pjson))
       postUpdate(owner, repo, "running", JSON.stringify(pjson));
 
         const update = new Update()

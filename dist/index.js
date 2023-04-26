@@ -14423,6 +14423,10 @@ function run() {
         try {
             console.log(pjson);
             console.log(JSON.stringify(pjson));
+            core.info("pjson");
+            core.info(pjson);
+            core.info("stringified");
+            core.info(JSON.stringify(pjson));
             (0, postUpdate_1.postUpdate)(owner, repo, "running", JSON.stringify(pjson));
             const update = new update_1.Update();
             update.run('true');
