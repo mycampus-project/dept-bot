@@ -2,11 +2,13 @@ import * as core from '@actions/core'
 import { Octokit } from '@octokit/action';
 import { Audit } from './audit';
 import { Outdated } from './outdated';
+import { ReadPackage } from './readPackage';
 import { pullRequest } from './pullRequest';
 import { Update } from './update';
 import { registerRepo } from './register';
 import { postUpdate } from './postUpdate';
 import { postRun } from './postRun';
+import { read } from 'fs';
 
 async function run(): Promise<void> {
 const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? "a/b").split("/");
@@ -22,7 +24,13 @@ let majorsAvailable = false;
     core.info(pjson)
     core.info("stringified")
     core.info(JSON.stringify(pjson))
-      postUpdate(owner, repo, "running", JSON.stringify(pjson));
+
+      const read = new ReadPackage()
+      read.run();
+      core.info("read")
+      core.info(read.stdout);
+
+      postUpdate(owner, repo, "running", read.stdout);
 
         const update = new Update()
         update.run('true')
@@ -58,17 +66,17 @@ let majorsAvailable = false;
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
-          postUpdate(owner, repo, "majors", JSON.stringify(pjson));
+          postUpdate(owner, repo, "majors", read.stdout);
           postRun("ok", "Updated minor versions, major upgrades available.")
           core.setFailed('This repo has outdated packages')
         } else {
-          postUpdate(owner, repo, "success", JSON.stringify(pjson));
+          postUpdate(owner, repo, "success", read.stdout);
           postRun("ok", "All dependencies up to date")
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
-          postUpdate(owner, repo, "failed", JSON.stringify(pjson));
+          postUpdate(owner, repo, "failed", null);
           postRun("fail", "Failed to update.")
           core.setFailed(e.message)
         }
