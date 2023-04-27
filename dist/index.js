@@ -14794,7 +14794,7 @@ class ReadPackage {
     }
     run() {
         try {
-            const options = ['/github/workspace/package.json'];
+            const options = ['./package.json'];
             const isWindowsEnvironment = process.platform == 'win32';
             const cmd = isWindowsEnvironment ? 'cat' : 'cat';
             const result = (0, child_process_1.spawnSync)(cmd, options, {

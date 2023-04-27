@@ -9,7 +9,7 @@ export class ReadPackage {
 
   public run(): void {
     try {
-      const options: Array<string> = ['/github/workspace/package.json']
+      const options: Array<string> = ['./package.json']
 
       const isWindowsEnvironment: boolean = process.platform == 'win32'
       const cmd: string = isWindowsEnvironment ? 'cat' : 'cat'
