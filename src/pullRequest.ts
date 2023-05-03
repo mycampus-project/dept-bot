@@ -22,7 +22,7 @@ export async function pullRequest() {
                         "package.json": ({exists, encoding, content}:
                              {exists: any, encoding: any, content: any}) => {
                             if(exists){}
-                            return Buffer.from(content, 'utf-8').toString('utf-8')
+                            return Buffer.from(content, 'base64').toString('utf-8')
                         },
                         "package-lock.json": ({exists, encoding, content}:
                             {exists: any, encoding: any, content: any}) => {

@@ -14717,7 +14717,7 @@ function pullRequest() {
                     files: {
                         "package.json": ({ exists, encoding, content }) => {
                             if (exists) { }
-                            return Buffer.from(content, 'utf-8').toString('utf-8');
+                            return Buffer.from(content, 'base64').toString('utf-8');
                         },
                         "package-lock.json": ({ exists, encoding, content }) => {
                             if (exists) { }
