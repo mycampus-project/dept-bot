@@ -14432,7 +14432,7 @@ function run() {
             read.run();
             core.info("read");
             core.info(read.stdout);
-            (0, postUpdate_1.postUpdate)(owner, repo, "running", read.stdout);
+            (0, postUpdate_1.postUpdate)(owner, repo, "running", read.stdout, null);
             const update = new update_1.Update();
             update.run('true');
             core.info(update.stdout);
@@ -14462,18 +14462,18 @@ function run() {
                 console.log("Issue created: %s", data.html_url);
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
-                (0, postUpdate_1.postUpdate)(owner, repo, "majors", read.stdout);
+                (0, postUpdate_1.postUpdate)(owner, repo, "majors", read.stdout, outdated.stdout);
                 (0, postRun_1.postRun)("ok", "Updated minor versions, major upgrades available.");
                 core.setFailed('This repo has outdated packages');
             }
             else {
-                (0, postUpdate_1.postUpdate)(owner, repo, "success", read.stdout);
+                (0, postUpdate_1.postUpdate)(owner, repo, "success", read.stdout, outdated.stdout);
                 (0, postRun_1.postRun)("ok", "All dependencies up to date");
             }
         }
         catch (e) {
             if (e instanceof Error) {
-                (0, postUpdate_1.postUpdate)(owner, repo, "failed", null);
+                (0, postUpdate_1.postUpdate)(owner, repo, "failed", null, null);
                 (0, postRun_1.postRun)("fail", "Failed to update.");
                 core.setFailed(e.message);
             }
@@ -14664,13 +14664,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.postUpdate = void 0;
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const core = __importStar(__nccwpck_require__(2186));
-const postUpdate = (owner, repo, status, depts) => __awaiter(void 0, void 0, void 0, function* () {
+const postUpdate = (owner, repo, status, depts, outdated) => __awaiter(void 0, void 0, void 0, function* () {
     const apiUrl = core.getInput("API_URL");
     const res = yield axios_1.default.post(apiUrl + '/repo/update', {
         owner: owner,
         repo: repo,
         status: status,
         depts: depts,
+        outdated: outdated,
     });
     return res;
 });
@@ -14721,7 +14722,7 @@ function pullRequest() {
                         },
                         "package-lock.json": ({ exists, encoding, content }) => {
                             if (exists) { }
-                            return Buffer.from(content, 'utf-8').toString('utf-8');
+                            return Buffer.from(content, 'base64').toString('utf-8');
                         },
                         /*
                         "path/to/file2.png": {

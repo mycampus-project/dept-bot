@@ -30,7 +30,7 @@ let majorsAvailable = false;
       core.info("read")
       core.info(read.stdout);
 
-      postUpdate(owner, repo, "running", read.stdout);
+      postUpdate(owner, repo, "running", read.stdout, null);
 
         const update = new Update()
         update.run('true')
@@ -66,17 +66,17 @@ let majorsAvailable = false;
           console.log("Issue created: %s", data.html_url);
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
-          postUpdate(owner, repo, "majors", read.stdout);
+          postUpdate(owner, repo, "majors", read.stdout, outdated.stdout);
           postRun("ok", "Updated minor versions, major upgrades available.")
           core.setFailed('This repo has outdated packages')
         } else {
-          postUpdate(owner, repo, "success", read.stdout);
+          postUpdate(owner, repo, "success", read.stdout, outdated.stdout);
           postRun("ok", "All dependencies up to date")
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
-          postUpdate(owner, repo, "failed", null);
+          postUpdate(owner, repo, "failed", null, null);
           postRun("fail", "Failed to update.")
           core.setFailed(e.message)
         }
