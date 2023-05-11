@@ -15,8 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: install dependencies
-        run: npm ci
-      - uses: tuoku/dept-bot@v1.0.14
+        run: npm ci --legacy-peer-deps
+      - uses: mycampus-project/dept-bot@latest
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           API_URL: ${{ secrets.API_URL }}
