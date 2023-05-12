@@ -67,17 +67,17 @@ let majorsAvailable = false;
           core.debug(owner + "/" + repo)
           core.debug(data.html_url);
           postUpdate(owner, repo, "majors", read.stdout, outdated.stdout);
-          postRun("ok", "Updated minor versions, major upgrades available.")
+          postRun("ok", "Updated minor versions, major upgrades available.", repo, owner)
           core.setFailed('This repo has outdated packages')
         } else {
           postUpdate(owner, repo, "success", read.stdout, outdated.stdout);
-          postRun("ok", "All dependencies up to date")
+          postRun("ok", "All dependencies up to date", repo, owner)
         }
       }
       catch (e: unknown) {
         if (e instanceof Error) {
           postUpdate(owner, repo, "failed", null, null);
-          postRun("fail", "Failed to update.")
+          postRun("fail", "Failed to update.", repo, owner)
           core.setFailed(e.message)
         }
       }

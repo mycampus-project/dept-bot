@@ -14463,18 +14463,18 @@ function run() {
                 core.debug(owner + "/" + repo);
                 core.debug(data.html_url);
                 (0, postUpdate_1.postUpdate)(owner, repo, "majors", read.stdout, outdated.stdout);
-                (0, postRun_1.postRun)("ok", "Updated minor versions, major upgrades available.");
+                (0, postRun_1.postRun)("ok", "Updated minor versions, major upgrades available.", repo, owner);
                 core.setFailed('This repo has outdated packages');
             }
             else {
                 (0, postUpdate_1.postUpdate)(owner, repo, "success", read.stdout, outdated.stdout);
-                (0, postRun_1.postRun)("ok", "All dependencies up to date");
+                (0, postRun_1.postRun)("ok", "All dependencies up to date", repo, owner);
             }
         }
         catch (e) {
             if (e instanceof Error) {
                 (0, postUpdate_1.postUpdate)(owner, repo, "failed", null, null);
-                (0, postRun_1.postRun)("fail", "Failed to update.");
+                (0, postRun_1.postRun)("fail", "Failed to update.", repo, owner);
                 core.setFailed(e.message);
             }
         }
@@ -14607,11 +14607,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.postRun = void 0;
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const core = __importStar(__nccwpck_require__(2186));
-const postRun = (result, message) => __awaiter(void 0, void 0, void 0, function* () {
+const postRun = (result, message, repo, owner) => __awaiter(void 0, void 0, void 0, function* () {
     const apiUrl = core.getInput("API_URL");
     const res = yield axios_1.default.post(apiUrl + '/repo/run', {
         result: result,
-        message: message
+        message: message,
+        repo: repo,
+        owner: owner,
     });
     return res;
 });
